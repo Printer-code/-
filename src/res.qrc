@@ -1,0 +1,24 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/figure/running.png</file>
+        <file>images/background/sky1.png</file>
+        <file>images/obstacles/fir_tree_8.png</file>
+        <file>images/obstacles/jungle_tree_10.png</file>
+        <file>images/obstacles/jungle_tree_1.png</file>
+        <file>images/objects/7.png</file>
+        <file>images/figure/riding.png</file>
+        <file>images/background/cloud1.png</file>
+        <file>bgm/bgm1.mp3</file>
+        <file>images/background/5.png</file>
+        <file>images/objects/22.png</file>
+        <file>bgm/jumping.mp3</file>
+        <file>bgm/slipping.mp3</file>
+        <file>bgm/swing.wav</file>
+        <file>images/figure/life.png</file>
+        <file>bgm/hit.wav</file>
+        <file>bgm/coin.wav</file>
+        <file>images/objects/fish.png</file>
+        <file>bgm/eat.wav</file>
+        <file>bgm/bell.wav</file>
+    </qresource>
+</RCC>
