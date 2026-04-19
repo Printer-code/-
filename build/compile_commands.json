@@ -1,0 +1,26 @@
+[
+{
+  "directory": "C:/Qt_test01/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Qt_test01.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Qt_test01.dir\\Qt_test01_autogen\\mocs_compilation.cpp.obj -c C:\\Qt_test01\\build\\Qt_test01_autogen\\mocs_compilation.cpp",
+  "file": "C:/Qt_test01/build/Qt_test01_autogen/mocs_compilation.cpp",
+  "output": "CMakeFiles/Qt_test01.dir/Qt_test01_autogen/mocs_compilation.cpp.obj"
+},
+{
+  "directory": "C:/Qt_test01/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Qt_test01.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Qt_test01.dir\\src\\main.cpp.obj -c C:\\Qt_test01\\src\\main.cpp",
+  "file": "C:/Qt_test01/src/main.cpp",
+  "output": "CMakeFiles/Qt_test01.dir/src/main.cpp.obj"
+},
+{
+  "directory": "C:/Qt_test01/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Qt_test01.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Qt_test01.dir\\src\\just_test.cpp.obj -c C:\\Qt_test01\\src\\just_test.cpp",
+  "file": "C:/Qt_test01/src/just_test.cpp",
+  "output": "CMakeFiles/Qt_test01.dir/src/just_test.cpp.obj"
+},
+{
+  "directory": "C:/Qt_test01/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Qt_test01.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Qt_test01.dir\\Qt_test01_autogen\\UVLADIE3JM\\qrc_res.cpp.obj -c C:\\Qt_test01\\build\\Qt_test01_autogen\\UVLADIE3JM\\qrc_res.cpp",
+  "file": "C:/Qt_test01/build/Qt_test01_autogen/UVLADIE3JM/qrc_res.cpp",
+  "output": "CMakeFiles/Qt_test01.dir/Qt_test01_autogen/UVLADIE3JM/qrc_res.cpp.obj"
+}
+]
