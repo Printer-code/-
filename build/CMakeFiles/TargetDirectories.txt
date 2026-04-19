@@ -1,0 +1,5 @@
+C:/Qt_test01/build/CMakeFiles/Qt_test01.dir
+C:/Qt_test01/build/CMakeFiles/edit_cache.dir
+C:/Qt_test01/build/CMakeFiles/rebuild_cache.dir
+C:/Qt_test01/build/CMakeFiles/Qt_test01_autogen_timestamp_deps.dir
+C:/Qt_test01/build/CMakeFiles/Qt_test01_autogen.dir
