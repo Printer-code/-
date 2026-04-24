@@ -20,5 +20,13 @@
         <file>images/objects/fish.png</file>
         <file>bgm/eat.wav</file>
         <file>bgm/bell.wav</file>
+        <file>images/UI/menu.png</file>
+        <file>images/UI/main.png</file>
+        <file>images/UI/sides.png</file>
+        <file>images/UI/title.png</file>
+        <file>images/UI/instruction.png</file>
+        <file>images/UI/close.png</file>
+        <file>images/UI/play.png</file>
+        <file>images/UI/pause.png</file>
     </qresource>
 </RCC>

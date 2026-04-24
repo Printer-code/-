@@ -7,7 +7,9 @@
 #include <QPen>
 #include <QGraphicsColorizeEffect>
 #include <QBrush>
+#include <QDateTime>
 
+// 固定窗口尺寸 480*800  3:5比例
 const int SCREEN_W = 480;
 const int SCREEN_H = 800;
 const int LANE_X[] = {100, 240, 380};
@@ -22,6 +24,7 @@ JustTestGame::JustTestGame(QWidget *parent) : QGraphicsView(parent)
     scene = new QGraphicsScene(0, 0, SCREEN_W, SCREEN_H, this);
     setScene(scene);
 
+    // 初始化背景
     bgItem = new QGraphicsPixmapItem(QPixmap(":/images/background/5.png").scaled(SCREEN_W, SCREEN_H, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     scene->addItem(bgItem);
 
@@ -34,6 +37,7 @@ JustTestGame::JustTestGame(QWidget *parent) : QGraphicsView(parent)
     initAudio();
     initUI();
 
+    // 角色奔跑/自行车雪碧图帧切割
     QPixmap fullRunSheet(":/images/figure/running.png");
     QPixmap fullBikeSheet(":/images/figure/riding.png");
 
@@ -79,63 +83,56 @@ JustTestGame::~JustTestGame() {}
 
 void JustTestGame::initAudio()
 {
-    // BGM
+    // ★ 修复点1：使用更标准的 qrc:/// 前缀，避免路径解析失败
     bgmPlayer = new QMediaPlayer(this);
     audioOutput = new QAudioOutput(this);
     bgmPlayer->setAudioOutput(audioOutput);
-    audioOutput->setVolume(0.3);
+    audioOutput->setVolume(0.4);
     isMuted = false;
-    bgmPlayer->setSource(QUrl("qrc:/bgm/bgm1.mp3"));
-    bgmPlayer->setLoops(QMediaPlayer::Infinite); // BGM无限循环
+    bgmPlayer->setSource(QUrl("qrc:///bgm/bgm1.mp3"));
+    bgmPlayer->setLoops(QMediaPlayer::Infinite);
 
-    // 跳跃音效
     jumpPlayer = new QMediaPlayer(this);
     jumpAudio = new QAudioOutput(this);
     jumpPlayer->setAudioOutput(jumpAudio);
-    jumpAudio->setVolume(0.6);
-    jumpPlayer->setSource(QUrl("qrc:/bgm/jumping.mp3"));
+    jumpAudio->setVolume(0.8);
+    jumpPlayer->setSource(QUrl("qrc:///bgm/jumping.mp3"));
 
-    // 下滑音效
     slidePlayer = new QMediaPlayer(this);
     slideAudio = new QAudioOutput(this);
     slidePlayer->setAudioOutput(slideAudio);
-    slideAudio->setVolume(1.2);
-    slidePlayer->setSource(QUrl("qrc:/bgm/slipping.mp3"));
+    slideAudio->setVolume(1.0);
+    slidePlayer->setSource(QUrl("qrc:///bgm/slipping.mp3"));
 
-    // 左右移动音效
     swingPlayer = new QMediaPlayer(this);
     swingAudio = new QAudioOutput(this);
     swingPlayer->setAudioOutput(swingAudio);
-    swingAudio->setVolume(0.7);
-    swingPlayer->setSource(QUrl("qrc:/bgm/swing.wav"));
+    swingAudio->setVolume(0.8);
+    swingPlayer->setSource(QUrl("qrc:///bgm/swing.wav"));
 
-    // 受击音效
     hitPlayer = new QMediaPlayer(this);
     hitAudio = new QAudioOutput(this);
     hitPlayer->setAudioOutput(hitAudio);
     hitAudio->setVolume(1.0);
-    hitPlayer->setSource(QUrl("qrc:/bgm/hit.wav"));
+    hitPlayer->setSource(QUrl("qrc:///bgm/hit.wav"));
 
-    // 金币音效
     coinPlayer = new QMediaPlayer(this);
     coinAudio = new QAudioOutput(this);
     coinPlayer->setAudioOutput(coinAudio);
-    coinAudio->setVolume(0.1);
-    coinPlayer->setSource(QUrl("qrc:/bgm/coin.wav"));
+    coinAudio->setVolume(0.4);
+    coinPlayer->setSource(QUrl("qrc:///bgm/coin.wav"));
 
-    // 吃鱼音效
     eatPlayer = new QMediaPlayer(this);
     eatAudio = new QAudioOutput(this);
     eatPlayer->setAudioOutput(eatAudio);
-    eatAudio->setVolume(0.9);
-    eatPlayer->setSource(QUrl("qrc:/bgm/eat.wav"));
+    eatAudio->setVolume(1.0);
+    eatPlayer->setSource(QUrl("qrc:///bgm/eat.wav"));
 
-    // 【新增】自行车音效
     bikePlayer = new QMediaPlayer(this);
     bikeAudio = new QAudioOutput(this);
     bikePlayer->setAudioOutput(bikeAudio);
-    bikeAudio->setVolume(0.9);
-    bikePlayer->setSource(QUrl("qrc:/bgm/bell.wav"));
+    bikeAudio->setVolume(1.0);
+    bikePlayer->setSource(QUrl("qrc:///bgm/bell.wav"));
 }
 
 void JustTestGame::initUI()
@@ -157,7 +154,6 @@ void JustTestGame::initUI()
     scene->addItem(scoreText);
     scoreText->hide();
 
-    // 初始化三格血条
     for (int i = 0; i < 3; i++)
     {
         QGraphicsPixmapItem *heart = new QGraphicsPixmapItem(
@@ -169,13 +165,116 @@ void JustTestGame::initUI()
         heart->hide();
     }
 
+    QPixmap titlePix = QPixmap(":/images/UI/title.png");
+    titlePix = titlePix.scaled(360, 9999, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    titleItem = new QGraphicsPixmapItem(titlePix);
+    titleItem->setPos(SCREEN_W / 2 - titleItem->boundingRect().width() / 2, 60);
+    titleItem->setZValue(15);
+    scene->addItem(titleItem);
+    titleItem->hide();
+
+    tutorialMask = new QGraphicsRectItem(0, 0, SCREEN_W, SCREEN_H);
+    tutorialMask->setBrush(QColor(0, 0, 0, 220));
+    tutorialMask->setZValue(30);
+    scene->addItem(tutorialMask);
+    tutorialMask->hide();
+
+    QPixmap insPix = QPixmap(":/images/UI/instruction.png");
+    insPix = insPix.scaled(SCREEN_W - 20, SCREEN_H - 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    tutorialImage = new QGraphicsPixmapItem(insPix);
+    tutorialImage->setPos(SCREEN_W / 2 - tutorialImage->boundingRect().width() / 2, 80);
+    tutorialImage->setZValue(31);
+    scene->addItem(tutorialImage);
+    tutorialImage->hide();
+
+    QPushButton *closeBtn = new QPushButton();
+    closeBtn->setFixedSize(40, 40);
+    closeBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/close.png);
+            background-color: transparent;
+        }
+    )");
+    closeTutorialWidget = scene->addWidget(closeBtn);
+    closeTutorialWidget->setPos(SCREEN_W - 55, 15);
+    closeTutorialWidget->setZValue(32);
+    connect(closeBtn, SIGNAL(clicked()), this, SLOT(closeTutorial()));
+    closeTutorialWidget->hide();
+
+    // 维持上一版高度提升后的饱满尺寸
+    QPushButton *tutorialBtn = new QPushButton("游戏教程");
+    tutorialBtn->setFixedSize(180, 75);
+    tutorialBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/sides.png);
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: transparent;
+        }
+    )");
+    tutorialWidget = scene->addWidget(tutorialBtn);
+    tutorialWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 + 10);
+    tutorialWidget->setZValue(20);
+    connect(tutorialBtn, SIGNAL(clicked()), this, SLOT(onTutorialClicked()));
+
     QPushButton *startBtn = new QPushButton("开始游戏");
-    startBtn->setFixedSize(200, 60);
-    startBtn->setStyleSheet("background-color: rgba(255, 255, 250, 200); font-size: 24px; font-weight: bold; border-radius: 15px;");
+    startBtn->setFixedSize(180, 75);
+    startBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/main.png);
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: transparent;
+        }
+    )");
     startWidget = scene->addWidget(startBtn);
-    startWidget->setPos(SCREEN_W / 2 - 100, SCREEN_H / 2 + 50);
+    startWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 + 95);
     startWidget->setZValue(20);
     connect(startBtn, SIGNAL(clicked()), this, SLOT(onStartClicked()));
+
+    QPushButton *pauseBtn = new QPushButton();
+    pauseBtn->setFixedSize(40, 40);
+    pauseBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/pause.png);
+            background-color: transparent;
+        }
+    )");
+    pauseWidget = scene->addWidget(pauseBtn);
+    pauseWidget->setPos(SCREEN_W - 55, 15);
+    pauseWidget->setZValue(25);
+    connect(pauseBtn, SIGNAL(clicked()), this, SLOT(onPauseClicked()));
+    pauseWidget->hide();
+
+    QPushButton *resumeBtn = new QPushButton();
+    resumeBtn->setFixedSize(40, 40);
+    resumeBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/play.png);
+            background-color: transparent;
+        }
+    )");
+    resumeWidget = scene->addWidget(resumeBtn);
+    resumeWidget->setPos(SCREEN_W - 55, 15);
+    resumeWidget->setZValue(25);
+    connect(resumeBtn, SIGNAL(clicked()), this, SLOT(onResumeClicked()));
+    resumeWidget->hide();
+
+    QPushButton *pauseCloseBtn = new QPushButton();
+    pauseCloseBtn->setFixedSize(40, 40);
+    pauseCloseBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/close.png);
+            background-color: transparent;
+        }
+    )");
+    pauseCloseWidget = scene->addWidget(pauseCloseBtn);
+    pauseCloseWidget->setPos(SCREEN_W - 105, 15);
+    pauseCloseWidget->setZValue(25);
+    connect(pauseCloseBtn, SIGNAL(clicked()), this, SLOT(closeTutorial()));
+    pauseCloseWidget->hide();
 
     gameOverText = new QGraphicsTextItem("游戏结束!");
     gameOverText->setFont(QFont("Microsoft YaHei", 40, QFont::Bold));
@@ -185,52 +284,59 @@ void JustTestGame::initUI()
     scene->addItem(gameOverText);
 
     QPushButton *restartBtn = new QPushButton("再来一局");
-    restartBtn->setFixedSize(160, 50);
-    restartBtn->setStyleSheet("background-color: #4CAF50; color: white; font-size: 20px; border-radius: 10px;");
+    restartBtn->setFixedSize(180, 55);
+    restartBtn->setStyleSheet("background-color: #4CAF50; color: white; font-size: 22px; border-radius: 10px;");
     restartWidget = scene->addWidget(restartBtn);
-    restartWidget->setPos(SCREEN_W / 2 - 80, SCREEN_H / 2 - 30);
+    restartWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 - 30);
     restartWidget->setZValue(20);
     connect(restartBtn, SIGNAL(clicked()), this, SLOT(onRestartClicked()));
 
     QPushButton *exitBtn = new QPushButton("退出游戏");
-    exitBtn->setFixedSize(160, 50);
-    exitBtn->setStyleSheet("background-color: #f44336; color: white; font-size: 20px; border-radius: 10px;");
+    exitBtn->setFixedSize(180, 55);
+    exitBtn->setStyleSheet("background-color: #f44336; color: white; font-size: 22px; border-radius: 10px;");
     exitWidget = scene->addWidget(exitBtn);
-    exitWidget->setPos(SCREEN_W / 2 - 80, SCREEN_H / 2 + 40);
+    exitWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 + 40);
     exitWidget->setZValue(20);
     connect(exitBtn, SIGNAL(clicked()), this, SLOT(onQuitClicked()));
 
     gameOverText->hide();
     restartWidget->hide();
     exitWidget->hide();
+    tutorialWidget->hide();
 }
 
-void JustTestGame::resetGame()
+void JustTestGame::clearEntities()
 {
-    int i;
-    for (i = 0; i < obstacles.size(); i++)
+    for (int i = 0; i < obstacles.size(); i++)
     {
         scene->removeItem(obstacles[i]);
         delete obstacles[i];
     }
-    for (i = 0; i < coins.size(); i++)
+    obstacles.clear();
+
+    for (int i = 0; i < coins.size(); i++)
     {
         scene->removeItem(coins[i]);
         delete coins[i];
     }
-    for (i = 0; i < clouds.size(); i++)
+    coins.clear();
+
+    for (int i = 0; i < clouds.size(); i++)
     {
         scene->removeItem(clouds[i]);
         delete clouds[i];
     }
-    obstacles.clear();
-    coins.clear();
     clouds.clear();
+}
+
+void JustTestGame::resetGame()
+{
+    clearEntities();
 
     score = 0;
     lives = 3;
     gameSpeed = 5.0;
-    currentLane = MID_LANE;
+    currentLane = 1;
     currentAction = RUNNING;
     hasBike = false;
     isInvincible = false;
@@ -239,7 +345,6 @@ void JustTestGame::resetGame()
     currentFrameIndex = 0;
     wantsToSlide = false;
 
-    // 显示所有爱心
     for (auto heart : lifeHearts)
     {
         heart->show();
@@ -280,33 +385,31 @@ void JustTestGame::keyPressEvent(QKeyEvent *event)
     switch (event->key())
     {
     case Qt::Key_Left:
-        if (currentLane > LEFT_LANE)
+        if (currentLane > 0)
         {
             currentLane--;
-            swingPlayer->stop();
+            // ★ 修复点2：使用 setPosition(0) 解决音效被吞的问题
+            swingPlayer->setPosition(0);
             swingPlayer->play();
         }
         break;
     case Qt::Key_Right:
-        if (currentLane < RIGHT_LANE)
+        if (currentLane < 2)
         {
             currentLane++;
-            swingPlayer->stop();
+            swingPlayer->setPosition(0);
             swingPlayer->play();
         }
         break;
     case Qt::Key_Up:
-        // 【修改】跑步和下滑状态都能直接跳
         if (currentAction == RUNNING || currentAction == SLIDING)
         {
-            // 先重置下滑状态（恢复人物大小和位置）
             resetPlayerAction();
-            // 直接进入跳跃状态
             currentAction = JUMPING;
             jumpVelocity = -11;
             playerItem->setScale(1.2);
             playerItem->setZValue(10);
-            jumpPlayer->stop();
+            jumpPlayer->setPosition(0);
             jumpPlayer->play();
             QTimer::singleShot(600, this, SLOT(resetPlayerAction()));
         }
@@ -324,7 +427,7 @@ void JustTestGame::keyPressEvent(QKeyEvent *event)
             playerItem->setTransform(QTransform::fromScale(1.0, 0.4));
             playerItem->setZValue(0);
             slideTimer->start(800);
-            slidePlayer->stop();
+            slidePlayer->setPosition(0);
             slidePlayer->play();
         }
         break;
@@ -355,142 +458,155 @@ void JustTestGame::clearEffect()
     playerItem->setGraphicsEffect(nullptr);
 }
 
-// 生成实体：鱼道具5%概率，单车10%概率
 void JustTestGame::spawnEntities()
 {
-    int randomType = QRandomGenerator::global()->bounded(100);
-    int lane;
-
     static int lastObstacleType = -1;
-    static bool lastIsTripleCoin = false;
-    static int lastObstacleLane = -1;
     static qint64 lastBikeTime = 0;
     static qint64 lastFishTime = 0;
-    static int lastObsCount = 1;
+    static int consecutiveDoubles = 0;
+
+    static bool lastWasCoinStreak = false;
+    static bool lastWasItem = false;
+
     const qint64 BIKE_COOLDOWN = 30000;
     const qint64 FISH_COOLDOWN = 20000;
 
-    int obstacleProb = 65 + (score / 80) * 3;
-    if (obstacleProb > 83)
-        obstacleProb = 83;
-    int bikeProb = 10;
-    int fishProb = 5;
+    QList<int> freeLanes;
+    freeLanes << 0 << 1 << 2;
 
-    if (randomType < obstacleProb)
+    int obstacleProb = 45 + (score / 100) * 2;
+    if (obstacleProb > 75)
+        obstacleProb = 75;
+
+    int obsCount = 0;
+    if (QRandomGenerator::global()->bounded(100) < obstacleProb)
     {
-        int obsCount;
-        if (lastObsCount == 2)
+        int doubleObsProb = 10 + (score / 100) * 5;
+        if (doubleObsProb > 70)
+            doubleObsProb = 70;
+
+        if (QRandomGenerator::global()->bounded(100) < doubleObsProb)
         {
-            obsCount = 1;
+            obsCount = 2;
         }
         else
         {
-            obsCount = QRandomGenerator::global()->bounded(1, 3);
-        }
-        lastObsCount = obsCount;
-
-        QList<int> usedLanes;
-
-        for (int c = 0; c < obsCount; c++)
-        {
-            QGraphicsPixmapItem *obs = new QGraphicsPixmapItem();
-            int obsType;
-
-            do
-            {
-                obsType = QRandomGenerator::global()->bounded(3);
-            } while (obsType == lastObstacleType);
-            lastObstacleType = obsType;
-
-            do
-            {
-                lane = QRandomGenerator::global()->bounded(3);
-            } while (usedLanes.contains(lane));
-            usedLanes.append(lane);
-            lastObstacleLane = lane;
-            lastIsTripleCoin = false;
-
-            if (obsType == 0)
-                obs->setPixmap(QPixmap(":/images/obstacles/fir_tree_8.png"));
-            else if (obsType == 1)
-                obs->setPixmap(QPixmap(":/images/obstacles/jungle_tree_10.png"));
-            else
-                obs->setPixmap(QPixmap(":/images/obstacles/jungle_tree_1.png"));
-
-            obs->setData(0, obsType == 0 ? JUMP_OVER : (obsType == 1 ? SLIDE_UNDER : DODGE_ONLY));
-
-            qreal obsY = -50;
-            if (c > 0)
-            {
-                obsY -= QRandomGenerator::global()->bounded(70, 90);
-            }
-            obs->setPos(LANE_X[lane] - obs->boundingRect().width() / 2, obsY);
-            obs->setZValue(6);
-            scene->addItem(obs);
-            obstacles.append(obs);
+            obsCount = 1;
         }
     }
-    else if (randomType < (obstacleProb + fishProb))
+
+    if (obsCount == 2)
     {
-        qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-        if (currentTime - lastFishTime < FISH_COOLDOWN)
+        consecutiveDoubles++;
+        if (consecutiveDoubles > 2)
         {
-            spawnEntities();
-            return;
+            obsCount = 1;
+            consecutiveDoubles = 0;
         }
-        lastFishTime = currentTime;
-        lastIsTripleCoin = false;
-        lastObstacleType = -1;
-        lane = QRandomGenerator::global()->bounded(3);
-        QGraphicsPixmapItem *fish = new QGraphicsPixmapItem();
-        fish->setPixmap(QPixmap(":/images/objects/fish.png").scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        fish->setData(0, 888);
-        fish->setPos(LANE_X[lane] - fish->boundingRect().width() / 2, -50);
-        fish->setZValue(6);
-        scene->addItem(fish);
-        obstacles.append(fish);
-    }
-    else if (randomType < (obstacleProb + fishProb + bikeProb))
-    {
-        qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-        if (currentTime - lastBikeTime < BIKE_COOLDOWN)
-        {
-            spawnEntities();
-            return;
-        }
-        lastBikeTime = currentTime;
-        lastIsTripleCoin = false;
-        lastObstacleType = -1;
-        lane = QRandomGenerator::global()->bounded(3);
-        QGraphicsPixmapItem *bike = new QGraphicsPixmapItem();
-        bike->setPixmap(QPixmap(":/images/objects/22.png").scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        bike->setData(0, 999);
-        bike->setPos(LANE_X[lane] - bike->boundingRect().width() / 2, -50);
-        bike->setZValue(6);
-        scene->addItem(bike);
-        obstacles.append(bike);
     }
     else
     {
-        if (lastIsTripleCoin)
-        {
-            spawnEntities();
-            return;
-        }
-        lastIsTripleCoin = true;
-        lastObstacleType = -1;
-        lane = QRandomGenerator::global()->bounded(3);
+        consecutiveDoubles = 0;
+    }
 
-        int coinCount = QRandomGenerator::global()->bounded(1, 8);
-        for (int i = 0; i < coinCount; i++)
+    for (int c = 0; c < obsCount; c++)
+    {
+        if (freeLanes.isEmpty())
+            break;
+        int laneIdx = QRandomGenerator::global()->bounded(freeLanes.size());
+        int lane = freeLanes.takeAt(laneIdx);
+
+        QGraphicsPixmapItem *obs = new QGraphicsPixmapItem();
+        int obsType;
+        do
         {
-            QGraphicsPixmapItem *coin = new QGraphicsPixmapItem();
-            coin->setPixmap(QPixmap(":/images/objects/7.png").scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-            coin->setPos(LANE_X[lane] - coin->boundingRect().width() / 2, -50 - i * 40);
-            scene->addItem(coin);
-            coins.append(coin);
+            obsType = QRandomGenerator::global()->bounded(3);
+        } while (obsType == lastObstacleType);
+        lastObstacleType = obsType;
+
+        if (obsType == 0)
+            obs->setPixmap(QPixmap(":/images/obstacles/fir_tree_8.png"));
+        else if (obsType == 1)
+            obs->setPixmap(QPixmap(":/images/obstacles/jungle_tree_10.png"));
+        else
+            obs->setPixmap(QPixmap(":/images/obstacles/jungle_tree_1.png"));
+
+        obs->setData(0, obsType == 0 ? JUMP_OVER : (obsType == 1 ? SLIDE_UNDER : DODGE_ONLY));
+        obs->setPos(LANE_X[lane] - obs->boundingRect().width() / 2, -50);
+        obs->setZValue(6);
+        scene->addItem(obs);
+        obstacles.append(obs);
+    }
+
+    bool spawnedItemThisTick = false;
+    if (!lastWasItem && !freeLanes.isEmpty())
+    {
+        if (QRandomGenerator::global()->bounded(100) < 15)
+        {
+            int itemType = QRandomGenerator::global()->bounded(2);
+            qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+            bool canSpawn = false;
+
+            if (itemType == 0 && (currentTime - lastFishTime >= FISH_COOLDOWN))
+            {
+                canSpawn = true;
+                lastFishTime = currentTime;
+            }
+            else if (itemType == 1 && (currentTime - lastBikeTime >= BIKE_COOLDOWN))
+            {
+                canSpawn = true;
+                lastBikeTime = currentTime;
+            }
+
+            if (canSpawn)
+            {
+                int laneIdx = QRandomGenerator::global()->bounded(freeLanes.size());
+                int lane = freeLanes.takeAt(laneIdx);
+
+                QGraphicsPixmapItem *item = new QGraphicsPixmapItem();
+                if (itemType == 0)
+                {
+                    item->setPixmap(QPixmap(":/images/objects/fish.png").scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                    item->setData(0, 888);
+                }
+                else
+                {
+                    item->setPixmap(QPixmap(":/images/objects/22.png").scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                    item->setData(0, 999);
+                }
+                item->setPos(LANE_X[lane] - item->boundingRect().width() / 2, -50);
+                item->setZValue(6);
+                scene->addItem(item);
+                obstacles.append(item);
+                spawnedItemThisTick = true;
+            }
         }
     }
+    lastWasItem = spawnedItemThisTick;
+
+    bool spawnedCoinThisTick = false;
+    if (!lastWasCoinStreak && !freeLanes.isEmpty())
+    {
+        int coinProb = (obsCount == 0) ? 70 : 40;
+
+        if (QRandomGenerator::global()->bounded(100) < coinProb)
+        {
+            int laneIdx = QRandomGenerator::global()->bounded(freeLanes.size());
+            int lane = freeLanes.takeAt(laneIdx);
+
+            int coinCount = QRandomGenerator::global()->bounded(3, 6);
+            for (int i = 0; i < coinCount; i++)
+            {
+                QGraphicsPixmapItem *coin = new QGraphicsPixmapItem();
+                coin->setPixmap(QPixmap(":/images/objects/7.png").scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                coin->setPos(LANE_X[lane] - coin->boundingRect().width() / 2, -50 - i * 40);
+                scene->addItem(coin);
+                coins.append(coin);
+            }
+            spawnedCoinThisTick = true;
+        }
+    }
+    lastWasCoinStreak = spawnedCoinThisTick;
 
     if (QRandomGenerator::global()->bounded(100) < 50)
     {
@@ -540,7 +656,7 @@ void JustTestGame::gameLoop()
                 playerItem->setTransform(QTransform::fromScale(1.0, 0.4));
                 playerItem->setZValue(0);
                 slideTimer->start(800);
-                slidePlayer->stop();
+                slidePlayer->setPosition(0);
                 slidePlayer->play();
             }
             else
@@ -554,6 +670,10 @@ void JustTestGame::gameLoop()
     }
 
     gameSpeed = 5.5 + (score / 100) * 0.6;
+    if (gameSpeed > 14.0)
+    {
+        gameSpeed = 14.0;
+    }
 
     for (i = clouds.size() - 1; i >= 0; i--)
     {
@@ -575,7 +695,7 @@ void JustTestGame::gameLoop()
         {
             score += 10;
             scoreText->setPlainText("Score: " + QString::number(score));
-            coinPlayer->stop();
+            coinPlayer->setPosition(0);
             coinPlayer->play();
             scene->removeItem(coin);
             delete coin;
@@ -610,12 +730,10 @@ void JustTestGame::gameLoop()
         {
             int type = obs->data(0).toInt();
 
-            if (type == 999) // 单车
+            if (type == 999)
             {
-                // 【新增】播放自行车音效
-                bikePlayer->stop();
+                bikePlayer->setPosition(0);
                 bikePlayer->play();
-
                 hasBike = true;
                 scene->removeItem(obs);
                 delete obs;
@@ -623,19 +741,15 @@ void JustTestGame::gameLoop()
                 continue;
             }
 
-            if (type == 888) // 鱼：回血不加分
+            if (type == 888)
             {
-                eatPlayer->stop();
+                eatPlayer->setPosition(0);
                 eatPlayer->play();
-
-                // 回血，不超过3格上限
                 if (lives < 3)
                 {
                     lives++;
-                    // 显示对应的爱心（从右往左恢复）
                     lifeHearts[lives - 1]->show();
                 }
-
                 scene->removeItem(obs);
                 delete obs;
                 obstacles.removeAt(i);
@@ -694,13 +808,11 @@ void JustTestGame::gameLoop()
 
         if (hit)
         {
-            // 播放受击音效
-            hitPlayer->stop();
+            hitPlayer->setPosition(0);
             hitPlayer->play();
 
             if (hasBike)
             {
-                // 单车状态：只消耗单车，绝对不扣血
                 hasBike = false;
                 isInvincible = true;
                 QTimer::singleShot(1000, this, SLOT(endInvincible()));
@@ -709,7 +821,6 @@ void JustTestGame::gameLoop()
             }
             else
             {
-                // 无单车状态：扣血
                 lives--;
                 if (lives >= 0 && lives < lifeHearts.size())
                 {
@@ -747,7 +858,12 @@ void JustTestGame::setGameState(GameState state)
     switch (state)
     {
     case TITLE:
+        clearEntities();
+
+        bgItem->setPixmap(QPixmap(":/images/UI/menu.png").scaled(SCREEN_W, SCREEN_H, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        titleItem->show();
         startWidget->show();
+        tutorialWidget->show();
         playerItem->hide();
         gameOverText->hide();
         restartWidget->hide();
@@ -756,14 +872,45 @@ void JustTestGame::setGameState(GameState state)
         laneLine2->hide();
         pauseMask->hide();
         scoreText->hide();
+
+        tutorialMask->hide();
+        tutorialImage->hide();
+        closeTutorialWidget->hide();
+        pauseWidget->hide();
+        resumeWidget->hide();
+        pauseCloseWidget->hide();
+
         for (auto heart : lifeHearts)
         {
             heart->hide();
         }
         break;
+
+    case TUTORIAL:
+        titleItem->hide();
+        startWidget->hide();
+        tutorialWidget->hide();
+        playerItem->hide();
+        gameOverText->hide();
+        restartWidget->hide();
+        exitWidget->hide();
+        pauseMask->hide();
+        scoreText->hide();
+        pauseWidget->hide();
+        resumeWidget->hide();
+        pauseCloseWidget->hide();
+
+        tutorialMask->show();
+        tutorialImage->show();
+        closeTutorialWidget->show();
+        break;
+
     case PLAYING:
+        bgItem->setPixmap(QPixmap(":/images/background/5.png").scaled(SCREEN_W, SCREEN_H, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        titleItem->hide();
         isInvincible = false;
         startWidget->hide();
+        tutorialWidget->hide();
         gameOverText->hide();
         restartWidget->hide();
         exitWidget->hide();
@@ -772,20 +919,47 @@ void JustTestGame::setGameState(GameState state)
         laneLine1->show();
         laneLine2->show();
         pauseMask->hide();
-        for (auto heart : lifeHearts)
+
+        tutorialMask->hide();
+        tutorialImage->hide();
+        closeTutorialWidget->hide();
+        pauseWidget->show();
+        resumeWidget->hide();
+        pauseCloseWidget->hide();
+
+        for (int i = 0; i < 3; i++)
         {
-            heart->show();
+            if (i < lives)
+                lifeHearts[i]->show();
+            else
+                lifeHearts[i]->hide();
         }
+
         timer->start(1000 / 60);
         spawnTimer->start(800);
         bgmPlayer->play();
         break;
+
     case PAUSED:
         timer->stop();
         spawnTimer->stop();
         bgmPlayer->pause();
         pauseMask->show();
+        titleItem->hide();
+
+        tutorialMask->hide();
+        tutorialImage->hide();
+        closeTutorialWidget->hide();
+        startWidget->hide();
+        tutorialWidget->hide();
+        gameOverText->hide();
+        restartWidget->hide();
+        exitWidget->hide();
+        pauseWidget->hide();
+        resumeWidget->show();
+        pauseCloseWidget->show();
         break;
+
     case GAMEOVER:
         timer->stop();
         spawnTimer->stop();
@@ -793,13 +967,33 @@ void JustTestGame::setGameState(GameState state)
         gameOverText->show();
         restartWidget->show();
         exitWidget->show();
+        tutorialWidget->hide();
         pauseMask->hide();
+        titleItem->hide();
+
+        tutorialMask->hide();
+        tutorialImage->hide();
+        closeTutorialWidget->hide();
+        pauseWidget->hide();
+        resumeWidget->hide();
+        pauseCloseWidget->hide();
+
         for (auto heart : lifeHearts)
         {
             heart->hide();
         }
         break;
     }
+}
+
+void JustTestGame::onPauseClicked()
+{
+    setGameState(PAUSED);
+}
+
+void JustTestGame::onResumeClicked()
+{
+    setGameState(PLAYING);
 }
 
 void JustTestGame::onRestartClicked()
@@ -820,12 +1014,19 @@ void JustTestGame::onStartClicked()
     }
 }
 
-void JustTestGame::onPauseClicked() {}
-void JustTestGame::onResumeClicked() {}
-
 void JustTestGame::onQuitClicked()
 {
     QApplication::quit();
+}
+
+void JustTestGame::onTutorialClicked()
+{
+    setGameState(TUTORIAL);
+}
+
+void JustTestGame::closeTutorial()
+{
+    setGameState(TITLE);
 }
 
 void JustTestGame::onToggleVolumeClicked()
