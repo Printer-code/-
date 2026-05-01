@@ -8,6 +8,7 @@
 #include <QGraphicsColorizeEffect>
 #include <QBrush>
 #include <QDateTime>
+#include <QKeyEvent>
 
 // 固定窗口尺寸 480*800  3:5比例
 const int SCREEN_W = 480;
@@ -24,7 +25,6 @@ JustTestGame::JustTestGame(QWidget *parent) : QGraphicsView(parent)
     scene = new QGraphicsScene(0, 0, SCREEN_W, SCREEN_H, this);
     setScene(scene);
 
-    // 初始化背景
     bgItem = new QGraphicsPixmapItem(QPixmap(":/images/background/5.png").scaled(SCREEN_W, SCREEN_H, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     scene->addItem(bgItem);
 
@@ -37,7 +37,6 @@ JustTestGame::JustTestGame(QWidget *parent) : QGraphicsView(parent)
     initAudio();
     initUI();
 
-    // 角色奔跑/自行车雪碧图帧切割
     QPixmap fullRunSheet(":/images/figure/running.png");
     QPixmap fullBikeSheet(":/images/figure/riding.png");
 
@@ -83,7 +82,6 @@ JustTestGame::~JustTestGame() {}
 
 void JustTestGame::initAudio()
 {
-    // ★ 修复点1：使用更标准的 qrc:/// 前缀，避免路径解析失败
     bgmPlayer = new QMediaPlayer(this);
     audioOutput = new QAudioOutput(this);
     bgmPlayer->setAudioOutput(audioOutput);
@@ -179,10 +177,15 @@ void JustTestGame::initUI()
     scene->addItem(tutorialMask);
     tutorialMask->hide();
 
+    QGraphicsTextItem *tutorialText = new QGraphicsTextItem("按 ↑ ↓ ← → 进行躲避", tutorialMask);
+    tutorialText->setFont(QFont("Microsoft YaHei", 22, QFont::Bold));
+    tutorialText->setDefaultTextColor(Qt::white);
+    tutorialText->setPos(SCREEN_W / 2 - tutorialText->boundingRect().width() / 2, 35);
+
     QPixmap insPix = QPixmap(":/images/UI/instruction.png");
     insPix = insPix.scaled(SCREEN_W - 20, SCREEN_H - 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     tutorialImage = new QGraphicsPixmapItem(insPix);
-    tutorialImage->setPos(SCREEN_W / 2 - tutorialImage->boundingRect().width() / 2, 80);
+    tutorialImage->setPos(SCREEN_W / 2 - tutorialImage->boundingRect().width() / 2, 90);
     tutorialImage->setZValue(31);
     scene->addItem(tutorialImage);
     tutorialImage->hide();
@@ -193,6 +196,9 @@ void JustTestGame::initUI()
         QPushButton {
             border-image: url(:/images/UI/close.png);
             background-color: transparent;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         }
     )");
     closeTutorialWidget = scene->addWidget(closeBtn);
@@ -201,45 +207,77 @@ void JustTestGame::initUI()
     connect(closeBtn, SIGNAL(clicked()), this, SLOT(closeTutorial()));
     closeTutorialWidget->hide();
 
-    // 维持上一版高度提升后的饱满尺寸
+    // ====================== 按钮图片原始宽高比 3:2，宽度180时高度应为120 ======================
+    int btnWidth = 180;
+    int btnHeight = 120; // 高度 = 宽度 * 2/3 = 120
+
+    // 游戏教程按钮（图片 sides.png 比例 3:2）
     QPushButton *tutorialBtn = new QPushButton("游戏教程");
-    tutorialBtn->setFixedSize(180, 75);
+    tutorialBtn->setFixedSize(btnWidth, btnHeight);
     tutorialBtn->setStyleSheet(R"(
         QPushButton {
             border-image: url(:/images/UI/sides.png);
+            border: none;
+            padding: 0px;
+            margin: 0px;
+            outline: none;
             font-size: 20px;
             font-weight: bold;
             color: white;
             background-color: transparent;
+            min-height: 0px;
+            max-height: 16777215px;
+        }
+        QPushButton:pressed {
+            padding-top: 2px;
+            padding-left: 2px;
         }
     )");
     tutorialWidget = scene->addWidget(tutorialBtn);
-    tutorialWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 + 10);
+    tutorialWidget->setGeometry(QRectF(0, 0, btnWidth, btnHeight));
+    tutorialWidget->setPos(SCREEN_W / 2 - btnWidth / 2, SCREEN_H / 2 + 10);
     tutorialWidget->setZValue(20);
     connect(tutorialBtn, SIGNAL(clicked()), this, SLOT(onTutorialClicked()));
 
+    // 开始游戏按钮（图片 main.png 比例 3:2）
     QPushButton *startBtn = new QPushButton("开始游戏");
-    startBtn->setFixedSize(180, 75);
+    startBtn->setFixedSize(btnWidth, btnHeight);
     startBtn->setStyleSheet(R"(
         QPushButton {
             border-image: url(:/images/UI/main.png);
+            border: none;
+            padding: 0px;
+            margin: 0px;
+            outline: none;
             font-size: 20px;
             font-weight: bold;
             color: white;
             background-color: transparent;
+            min-height: 0px;
+            max-height: 16777215px;
+        }
+        QPushButton:pressed {
+            padding-top: 2px;
+            padding-left: 2px;
         }
     )");
     startWidget = scene->addWidget(startBtn);
-    startWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 + 95);
+    startWidget->setGeometry(QRectF(0, 0, btnWidth, btnHeight));
+    // 由于按钮高度增加到120，下方按钮位置需下移更多，避免重叠
+    startWidget->setPos(SCREEN_W / 2 - btnWidth / 2, SCREEN_H / 2 + 130);
     startWidget->setZValue(20);
     connect(startBtn, SIGNAL(clicked()), this, SLOT(onStartClicked()));
 
+    // 暂停 / 恢复等小按钮保持不变
     QPushButton *pauseBtn = new QPushButton();
     pauseBtn->setFixedSize(40, 40);
     pauseBtn->setStyleSheet(R"(
         QPushButton {
             border-image: url(:/images/UI/pause.png);
             background-color: transparent;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         }
     )");
     pauseWidget = scene->addWidget(pauseBtn);
@@ -254,11 +292,14 @@ void JustTestGame::initUI()
         QPushButton {
             border-image: url(:/images/UI/play.png);
             background-color: transparent;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         }
     )");
     resumeWidget = scene->addWidget(resumeBtn);
     resumeWidget->setPos(SCREEN_W - 55, 15);
-    resumeWidget->setZValue(25);
+    resumeWidget->setZValue(100);
     connect(resumeBtn, SIGNAL(clicked()), this, SLOT(onResumeClicked()));
     resumeWidget->hide();
 
@@ -268,11 +309,14 @@ void JustTestGame::initUI()
         QPushButton {
             border-image: url(:/images/UI/close.png);
             background-color: transparent;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         }
     )");
     pauseCloseWidget = scene->addWidget(pauseCloseBtn);
     pauseCloseWidget->setPos(SCREEN_W - 105, 15);
-    pauseCloseWidget->setZValue(25);
+    pauseCloseWidget->setZValue(100);
     connect(pauseCloseBtn, SIGNAL(clicked()), this, SLOT(closeTutorial()));
     pauseCloseWidget->hide();
 
@@ -283,19 +327,59 @@ void JustTestGame::initUI()
     gameOverText->setZValue(20);
     scene->addItem(gameOverText);
 
+    // 再来一局按钮（图片 main.png，同样使用 3:2 高度）
     QPushButton *restartBtn = new QPushButton("再来一局");
-    restartBtn->setFixedSize(180, 55);
-    restartBtn->setStyleSheet("background-color: #4CAF50; color: white; font-size: 22px; border-radius: 10px;");
+    restartBtn->setFixedSize(btnWidth, btnHeight);
+    restartBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/main.png);
+            border: none;
+            padding: 0px;
+            margin: 0px;
+            outline: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: transparent;
+            min-height: 0px;
+            max-height: 16777215px;
+        }
+        QPushButton:pressed {
+            padding-top: 2px;
+            padding-left: 2px;
+        }
+    )");
     restartWidget = scene->addWidget(restartBtn);
-    restartWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 - 30);
+    restartWidget->setGeometry(QRectF(0, 0, btnWidth, btnHeight));
+    restartWidget->setPos(SCREEN_W / 2 - btnWidth / 2, SCREEN_H / 2 - 30);
     restartWidget->setZValue(20);
     connect(restartBtn, SIGNAL(clicked()), this, SLOT(onRestartClicked()));
 
-    QPushButton *exitBtn = new QPushButton("退出游戏");
-    exitBtn->setFixedSize(180, 55);
-    exitBtn->setStyleSheet("background-color: #f44336; color: white; font-size: 22px; border-radius: 10px;");
+    // 返回主菜单按钮（图片 sides.png，同样使用 3:2 高度）
+    QPushButton *exitBtn = new QPushButton("返回主菜单");
+    exitBtn->setFixedSize(btnWidth, btnHeight);
+    exitBtn->setStyleSheet(R"(
+        QPushButton {
+            border-image: url(:/images/UI/sides.png);
+            border: none;
+            padding: 0px;
+            margin: 0px;
+            outline: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: transparent;
+            min-height: 0px;
+            max-height: 16777215px;
+        }
+        QPushButton:pressed {
+            padding-top: 2px;
+            padding-left: 2px;
+        }
+    )");
     exitWidget = scene->addWidget(exitBtn);
-    exitWidget->setPos(SCREEN_W / 2 - 90, SCREEN_H / 2 + 40);
+    exitWidget->setGeometry(QRectF(0, 0, btnWidth, btnHeight));
+    exitWidget->setPos(SCREEN_W / 2 - btnWidth / 2, SCREEN_H / 2 + 50);
     exitWidget->setZValue(20);
     connect(exitBtn, SIGNAL(clicked()), this, SLOT(onQuitClicked()));
 
@@ -334,6 +418,8 @@ void JustTestGame::resetGame()
     clearEntities();
 
     score = 0;
+    scoreText->setPlainText("Score: 0");
+
     lives = 3;
     gameSpeed = 5.0;
     currentLane = 1;
@@ -360,6 +446,9 @@ void JustTestGame::resetGame()
 
 void JustTestGame::keyPressEvent(QKeyEvent *event)
 {
+    if (event->isAutoRepeat())
+        return;
+
     if (currentState == TITLE)
     {
         if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
@@ -388,7 +477,6 @@ void JustTestGame::keyPressEvent(QKeyEvent *event)
         if (currentLane > 0)
         {
             currentLane--;
-            // ★ 修复点2：使用 setPosition(0) 解决音效被吞的问题
             swingPlayer->setPosition(0);
             swingPlayer->play();
         }
@@ -406,12 +494,11 @@ void JustTestGame::keyPressEvent(QKeyEvent *event)
         {
             resetPlayerAction();
             currentAction = JUMPING;
-            jumpVelocity = -11;
+            jumpVelocity = -12.0;
             playerItem->setScale(1.2);
             playerItem->setZValue(10);
             jumpPlayer->setPosition(0);
             jumpPlayer->play();
-            QTimer::singleShot(600, this, SLOT(resetPlayerAction()));
         }
         break;
     case Qt::Key_Down:
@@ -465,7 +552,8 @@ void JustTestGame::spawnEntities()
     static qint64 lastFishTime = 0;
     static int consecutiveDoubles = 0;
 
-    static bool lastWasCoinStreak = false;
+    // coinCooldown：大于0时表示处于金币生成冷却期
+    static int coinCooldown = 0;
     static bool lastWasItem = false;
 
     const qint64 BIKE_COOLDOWN = 30000;
@@ -473,7 +561,8 @@ void JustTestGame::spawnEntities()
 
     QList<int> freeLanes;
     freeLanes << 0 << 1 << 2;
-
+//障碍生成部分
+    // 随着分数增加，障碍生成概率逐渐提升，最高可达75%，防止难度过高
     int obstacleProb = 45 + (score / 100) * 2;
     if (obstacleProb > 75)
         obstacleProb = 75;
@@ -503,6 +592,12 @@ void JustTestGame::spawnEntities()
             obsCount = 1;
             consecutiveDoubles = 0;
         }
+        else
+        {
+            // 强制将两个障碍物分别放置在最左侧和最右侧赛道，确保中间留空且贴图不重叠
+            freeLanes.clear();
+            freeLanes << 0 << 2;
+        }
     }
     else
     {
@@ -522,6 +617,7 @@ void JustTestGame::spawnEntities()
         {
             obsType = QRandomGenerator::global()->bounded(3);
         } while (obsType == lastObstacleType);
+        // 记录上一个生成的障碍类型，避免连续生成相同类型
         lastObstacleType = obsType;
 
         if (obsType == 0)
@@ -532,12 +628,16 @@ void JustTestGame::spawnEntities()
             obs->setPixmap(QPixmap(":/images/obstacles/jungle_tree_1.png"));
 
         obs->setData(0, obsType == 0 ? JUMP_OVER : (obsType == 1 ? SLIDE_UNDER : DODGE_ONLY));
-        obs->setPos(LANE_X[lane] - obs->boundingRect().width() / 2, -50);
+        // 给每个障碍设置100-220的随机Y偏移，避免同一高度同时出现
+        int randomYOffset = QRandomGenerator::global()->bounded(100, 220);
+        obs->setPos(LANE_X[lane] - obs->boundingRect().width() / 2, -50 - randomYOffset);
         obs->setZValue(6);
         scene->addItem(obs);
         obstacles.append(obs);
     }
 
+//道具生成部分
+    // 在没有连续生成道具的情况下，且当前有空闲赛道时，有15%概率生成道具
     bool spawnedItemThisTick = false;
     if (!lastWasItem && !freeLanes.isEmpty())
     {
@@ -546,7 +646,7 @@ void JustTestGame::spawnEntities()
             int itemType = QRandomGenerator::global()->bounded(2);
             qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
             bool canSpawn = false;
-
+            // 鱼类道具和自行车道具分别有独立的冷却时间，确保它们不会在短时间内频繁出现
             if (itemType == 0 && (currentTime - lastFishTime >= FISH_COOLDOWN))
             {
                 canSpawn = true;
@@ -574,7 +674,9 @@ void JustTestGame::spawnEntities()
                     item->setPixmap(QPixmap(":/images/objects/22.png").scaled(40, 40, Qt::KeepAspectRatio, Qt::SmoothTransformation));
                     item->setData(0, 999);
                 }
-                item->setPos(LANE_X[lane] - item->boundingRect().width() / 2, -50);
+                // 道具也同步做偏移，和障碍错开
+                int itemYOffset = QRandomGenerator::global()->bounded(80, 180);
+                item->setPos(LANE_X[lane] - item->boundingRect().width() / 2, -50 - itemYOffset);
                 item->setZValue(6);
                 scene->addItem(item);
                 obstacles.append(item);
@@ -583,11 +685,15 @@ void JustTestGame::spawnEntities()
         }
     }
     lastWasItem = spawnedItemThisTick;
-
-    bool spawnedCoinThisTick = false;
-    if (!lastWasCoinStreak && !freeLanes.isEmpty())
+//金币生成部分
+    if (coinCooldown > 0)
     {
-        int coinProb = (obsCount == 0) ? 70 : 40;
+        coinCooldown--;
+    }
+
+    if (coinCooldown <= 0 && !freeLanes.isEmpty())
+    {
+        int coinProb = (obsCount == 0) ? 25 : 10;
 
         if (QRandomGenerator::global()->bounded(100) < coinProb)
         {
@@ -595,28 +701,21 @@ void JustTestGame::spawnEntities()
             int lane = freeLanes.takeAt(laneIdx);
 
             int coinCount = QRandomGenerator::global()->bounded(3, 6);
+            // 金币组整体做随机偏移，避免每次都在同一跑道生成
+            int coinGroupOffset = QRandomGenerator::global()->bounded(50, 120);
             for (int i = 0; i < coinCount; i++)
             {
                 QGraphicsPixmapItem *coin = new QGraphicsPixmapItem();
                 coin->setPixmap(QPixmap(":/images/objects/7.png").scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-                coin->setPos(LANE_X[lane] - coin->boundingRect().width() / 2, -50 - i * 40);
+                coin->setPos(LANE_X[lane] - coin->boundingRect().width() / 2, -50 - coinGroupOffset - i * 40);
                 scene->addItem(coin);
                 coins.append(coin);
             }
-            spawnedCoinThisTick = true;
+            // 金币生成后进入冷却期，避免短时间内大量金币出现，冷却期长度根据当前难度动态调整
+            coinCooldown = 2;
         }
     }
-    lastWasCoinStreak = spawnedCoinThisTick;
 
-    if (QRandomGenerator::global()->bounded(100) < 50)
-    {
-        QGraphicsPixmapItem *cloud = new QGraphicsPixmapItem();
-        cloud->setPixmap(QPixmap(":/images/background/cloud1.png"));
-        cloud->setPos(QRandomGenerator::global()->bounded(SCREEN_W), -100);
-        cloud->setZValue(-1);
-        scene->addItem(cloud);
-        clouds.append(cloud);
-    }
 }
 
 void JustTestGame::gameLoop()
@@ -637,13 +736,16 @@ void JustTestGame::gameLoop()
 
     qreal playerW = playerItem->boundingRect().width();
     qreal playerH = playerItem->boundingRect().height();
+    // 计算目标X位置，确保角色中心对齐赛道中心，并添加平滑过渡效果
     qreal targetX = LANE_X[currentLane] - playerW / 2;
+    // 平滑过渡：每帧移动距离为当前与目标X的差值的30%，避免瞬移
     playerItem->setX(playerItem->x() + (targetX - playerItem->x()) * 0.3);
 
     if (currentAction == JUMPING)
     {
+        // 角色跳跃时，Y轴位置根据jumpVelocity变化，形成抛物线效果
         playerItem->setY(playerItem->y() + jumpVelocity);
-        jumpVelocity += 0.6;
+        jumpVelocity += 0.6;//此处设置了重力加速度
 
         if (playerItem->y() >= PLAYER_BASE_Y)
         {
@@ -652,8 +754,11 @@ void JustTestGame::gameLoop()
             if (wantsToSlide)
             {
                 wantsToSlide = false;
+                // 允许落地后直接进入滑铲状态，缩小角色高度并降低Z值，持续800ms后恢复
+                //实现了跳跃和滑铲的无缝衔接
                 currentAction = SLIDING;
                 playerItem->setTransform(QTransform::fromScale(1.0, 0.4));
+                // 跳跃结束后直接进入滑铲状态，降低Z值确保角色图层在障碍物下方
                 playerItem->setZValue(0);
                 slideTimer->start(800);
                 slidePlayer->setPosition(0);
@@ -669,7 +774,9 @@ void JustTestGame::gameLoop()
         }
     }
 
-    gameSpeed = 5.5 + (score / 100) * 0.6;
+    // 分数达到1100后不再继续提升gameSpeed上限难度
+    int speedScore = score > 1100 ? 1100 : score;
+    gameSpeed = 5.5 + (speedScore / 100) * 0.6;
     if (gameSpeed > 14.0)
     {
         gameSpeed = 14.0;
@@ -755,10 +862,10 @@ void JustTestGame::gameLoop()
                 obstacles.removeAt(i);
                 continue;
             }
-
+            // 计算障碍物的有效碰撞区域
             qreal obsH = obs->boundingRect().height();
             qreal obsY = obs->y();
-
+            // 角色的碰撞深度固定在身体中部往下10个像素
             qreal fixedPlayerDepth = PLAYER_BASE_Y + playerH / 2;
             qreal frontAreaTop = obsY + obsH * 0.7;
             qreal backAreaBottom = obsY + obsH + 10;
@@ -767,6 +874,7 @@ void JustTestGame::gameLoop()
 
             if (type == JUMP_OVER)
             {
+                // 跳跃类障碍物：只有当角色在碰撞区域内且未正确跳过时才算碰撞
                 if (isInObstacleDepth && isPlayerOnGround && currentAction != JUMPING)
                 {
                     hit = true;
@@ -783,6 +891,7 @@ void JustTestGame::gameLoop()
             {
                 if (isInObstacleDepth)
                 {
+                    // 计算角色中心X与障碍物中心X的距离，判断是否在障碍物中间范围内
                     qreal obsW = obs->boundingRect().width();
                     qreal obsCenterX = obs->x() + obsW / 2;
                     qreal playerCenterX = playerItem->x() + playerW / 2;
@@ -814,6 +923,7 @@ void JustTestGame::gameLoop()
             if (hasBike)
             {
                 hasBike = false;
+                // 角色失去自行车后短暂无敌，避免连续碰撞导致瞬间失去多条生命
                 isInvincible = true;
                 QTimer::singleShot(1000, this, SLOT(endInvincible()));
                 resetPlayerAction();
@@ -850,6 +960,7 @@ void JustTestGame::gameLoop()
             obstacles.removeAt(i);
         }
     }
+    
 }
 
 void JustTestGame::setGameState(GameState state)
@@ -1016,7 +1127,7 @@ void JustTestGame::onStartClicked()
 
 void JustTestGame::onQuitClicked()
 {
-    QApplication::quit();
+    setGameState(TITLE);
 }
 
 void JustTestGame::onTutorialClicked()
